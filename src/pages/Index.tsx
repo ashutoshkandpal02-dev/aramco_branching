@@ -6,13 +6,16 @@ import { DecisionTimeline } from "@/components/simulation/DecisionTimeline";
 import { WorksheetMap } from "@/components/simulation/WorksheetMap";
 import { WorksheetPanel } from "@/components/simulation/WorksheetPanel";
 import { AssessmentPanel } from "@/components/simulation/AssessmentPanel";
+import { AIInsightsScreen } from "@/components/simulation/AIInsightsScreen";
+import { ActionPlanScreen } from "@/components/simulation/ActionPlanScreen";
+import { NudgesScreen } from "@/components/simulation/NudgesScreen";
 import { useSimulation } from "@/hooks/useSimulation";
-import { useState } from "react";
-import { Monitor, ArrowRight } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Globe, Moon, Sun, Monitor, Layout, ClipboardList, ShieldCheck, Sparkles, Calendar, Bell, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type Phase = "simulation" | "worksheet" | "assessment";
+type Phase = "simulation" | "worksheet" | "assessment" | "ai_insights" | "action_plan" | "nudges";
 
 const Index = () => {
   const { t, i18n } = useTranslation();
@@ -44,13 +47,23 @@ const Index = () => {
     setPhase("simulation");
   };
 
-  const journeyProgress = phase === "simulation" ? 0 : phase === "worksheet" ? 50 : 100;
+  const phases: { id: Phase; label: string; icon: any }[] = [
+    { id: "simulation", label: t('simulation'), icon: Monitor },
+    { id: "worksheet", label: t('worksheet'), icon: Layout },
+    { id: "assessment", label: t('assessment'), icon: ShieldCheck },
+    { id: "ai_insights", label: t('ai_insights'), icon: Sparkles },
+    { id: "action_plan", label: t('action_plan'), icon: Calendar },
+    { id: "nudges", label: t('nudges'), icon: Bell },
+  ];
+
+  const phaseIndex = phases.findIndex(p => p.id === phase);
+  const journeyProgress = Math.round(((phaseIndex) / (phases.length - 1)) * 100);
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-500 pb-20">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-border/40">
-        <div className="container max-w-7xl mx-auto h-20 flex items-center justify-between px-4 sm:px-8">
+        <div className="container max-w-7xl mx-auto h-20 flex items-center justify-between px-4 sm:px-8" dir="ltr">
           <div className="flex items-center gap-12">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg ring-4 ring-green-500/10">
@@ -65,34 +78,24 @@ const Index = () => {
             </div>
 
             {/* Phase Navigation */}
-            <nav className="hidden md:flex items-center gap-1 bg-secondary/40 p-1 rounded-xl">
-              <button 
-                onClick={() => setPhase("simulation")}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-xs font-semibold transition-all",
-                  phase === "simulation" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t('simulation')}
-              </button>
-              <button 
-                onClick={() => setPhase("worksheet")}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-xs font-semibold transition-all",
-                  phase === "worksheet" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t('worksheet')}
-              </button>
-              <button 
-                onClick={() => setPhase("assessment")}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-xs font-semibold transition-all",
-                  phase === "assessment" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t('assessment')}
-              </button>
+            <nav className="hidden xl:flex items-center gap-1 bg-secondary/40 p-1 rounded-xl">
+              {phases.map((p, idx) => {
+                const isActive = phase === p.id;
+                const isPast = phases.findIndex(ph => ph.id === phase) > idx;
+                return (
+                  <button 
+                    key={p.id}
+                    onClick={() => setPhase(p.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2",
+                      isActive ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <p.icon className={cn("w-3 h-3", isActive ? "text-primary" : "text-muted-foreground")} />
+                    {p.label}
+                  </button>
+                );
+              })}
             </nav>
           </div>
 
@@ -121,9 +124,9 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container max-w-7xl mx-auto px-4 sm:px-8 pt-10">
+      <main className="container max-w-7xl mx-auto px-4 sm:px-8 pt-10" dir="ltr">
         {/* Journey Progress */}
-        <div className="max-w-md mx-auto mb-16 text-center">
+        <div className="max-w-md mx-auto mb-16 text-center" dir={isArabic ? 'rtl' : 'ltr'}>
             <p className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground mb-3 uppercase">
               {t('journey_progress', { percent: journeyProgress })}
             </p>
@@ -138,11 +141,14 @@ const Index = () => {
         <div className={cn(
             "grid grid-cols-1 gap-10",
             phase === "simulation" ? "lg:grid-cols-12" : "max-w-4xl mx-auto"
-        )}>
+        )} dir="ltr">
           {/* Main Content Area */}
-          <div className={cn(
-            phase === "simulation" ? "lg:col-span-8 flex flex-col gap-6" : "w-full"
-          )}>
+          <div 
+            className={cn(
+              phase === "simulation" ? "lg:col-span-8 flex flex-col gap-6" : "w-full"
+            )}
+            dir={isArabic ? 'rtl' : 'ltr'}
+          >
             {phase === "simulation" && (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -196,13 +202,29 @@ const Index = () => {
                 simulationData={decisions} 
                 worksheetData={worksheetData}
                 onRestart={handleRestart}
+                onComplete={() => setPhase("ai_insights")}
               />
+            )}
+
+            {phase === "ai_insights" && (
+              <AIInsightsScreen onComplete={() => setPhase("action_plan")} />
+            )}
+
+            {phase === "action_plan" && (
+              <ActionPlanScreen onComplete={() => setPhase("nudges")} />
+            )}
+
+            {phase === "nudges" && (
+              <NudgesScreen onRestart={handleRestart} />
             )}
           </div>
 
           {/* Sidebar - only show during simulation */}
           {phase === "simulation" && (
-            <aside className="lg:col-span-4 flex flex-col gap-6">
+            <aside 
+              className="lg:col-span-4 flex flex-col gap-6"
+              dir={isArabic ? 'rtl' : 'ltr'}
+            >
               <AIInsightsPanel decisions={decisions} isComplete={isSimulationComplete} />
               <WorksheetMap decisions={decisions} currentStepId={currentStep?.id} />
             </aside>
